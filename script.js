@@ -110,13 +110,93 @@ document.addEventListener('DOMContentLoaded', () => {
         return svg;
     }
 
+    function createStockItem(tickerSymbol, progress) {
+        // Mock data for demonstration
+        const price = (Math.random() * 1000).toFixed(2);
+        const changePercent = (Math.random() * 10 - 5).toFixed(2);
+        const changeType = changePercent >= 0 ? 'positive' : 'negative';
+        const change = `${changePercent >= 0 ? '+' : ''}${changePercent}%`;
+        const sparklineData = Array.from({ length: 20 }, () => Math.random() * 100);
+        const sparklineColor = changeType === 'positive' ? '#34c759' : '#ff3b30';
+
+        const stockItem = document.createElement('div');
+        stockItem.className = 'stock-item';
+
+        const stockInfo = document.createElement('div');
+        stockInfo.className = 'stock-info';
+
+        const ticker = document.createElement('div');
+        ticker.className = 'ticker';
+        ticker.textContent = tickerSymbol;
+
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = 'Loading...'; // Placeholder for name
+
+        stockInfo.appendChild(ticker);
+        stockInfo.appendChild(name);
+
+        const graph = document.createElement('div');
+        graph.className = 'graph';
+        const sparkline = createSparkline(sparklineData, sparklineColor, progress);
+        graph.appendChild(sparkline);
+        
+        const priceInfo = document.createElement('div');
+        priceInfo.className = 'price-info';
+
+        const priceEl = document.createElement('div');
+        priceEl.className = 'price';
+        priceEl.textContent = `$${price}`;
+
+        const changeEl = document.createElement('div');
+        changeEl.className = `change ${changeType}`;
+        changeEl.textContent = change;
+
+        priceInfo.appendChild(priceEl);
+        priceInfo.appendChild(changeEl);
+
+        stockItem.appendChild(stockInfo);
+        stockItem.appendChild(graph);
+        stockItem.appendChild(priceInfo);
+
+        return stockItem;
+    }
+
     const appContainer = document.getElementById('app-container');
+    const cardWidth = 320;
+    const gap = 20;
+
+    function positionCards() {
+        const containerWidth = appContainer.offsetWidth;
+        const numColumns = Math.floor((containerWidth + gap) / (cardWidth + gap));
+        const columns = Array(numColumns).fill(0).map(() => gap);
+
+        const cardContainers = document.querySelectorAll('.category-card-container');
+
+        cardContainers.forEach(container => {
+            const card = container.querySelector('.category-card');
+            const cardHeight = card.offsetHeight;
+            
+            const minColIndex = columns.indexOf(Math.min(...columns));
+            
+            container.style.top = `${columns[minColIndex]}px`;
+            container.style.left = `${minColIndex * (cardWidth + gap) + gap}px`;
+
+            columns[minColIndex] += cardHeight + gap;
+        });
+
+        appContainer.style.height = `${Math.max(...columns)}px`;
+    }
 
     function renderCards() {
         const progress = getMarketProgress();
         sparklineIdCounter = 0;
         appContainer.innerHTML = ''; // Clear previous content
-        for (const category in categories) {
+        
+        const cardPromises = Object.keys(categories).map(category => {
+            const categoryCardContainer = document.createElement('div');
+            categoryCardContainer.className = 'category-card-container';
+            
             const categoryCard = document.createElement('div');
             categoryCard.className = 'category-card';
 
@@ -126,61 +206,30 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryCard.appendChild(categoryTitle);
 
             categories[category].forEach(tickerSymbol => {
-                // Mock data for demonstration
-                const price = (Math.random() * 1000).toFixed(2);
-                const changePercent = (Math.random() * 10 - 5).toFixed(2);
-                const changeType = changePercent >= 0 ? 'positive' : 'negative';
-                const change = `${changePercent >= 0 ? '+' : ''}${changePercent}%`;
-                const sparklineData = Array.from({ length: 20 }, () => Math.random() * 100);
-                const sparklineColor = changeType === 'positive' ? '#34c759' : '#ff3b30';
-
-                const stockItem = document.createElement('div');
-                stockItem.className = 'stock-item';
-
-                const stockInfo = document.createElement('div');
-                stockInfo.className = 'stock-info';
-
-                const ticker = document.createElement('div');
-                ticker.className = 'ticker';
-                ticker.textContent = tickerSymbol;
-
-                const name = document.createElement('div');
-                name.className = 'name';
-                name.textContent = 'Loading...'; // Placeholder for name
-
-                stockInfo.appendChild(ticker);
-                stockInfo.appendChild(name);
-
-                const graph = document.createElement('div');
-                graph.className = 'graph';
-                const sparkline = createSparkline(sparklineData, sparklineColor, progress);
-                graph.appendChild(sparkline);
-                
-                const priceInfo = document.createElement('div');
-                priceInfo.className = 'price-info';
-
-                const priceEl = document.createElement('div');
-                priceEl.className = 'price';
-                priceEl.textContent = `$${price}`;
-
-                const changeEl = document.createElement('div');
-                changeEl.className = `change ${changeType}`;
-                changeEl.textContent = change;
-
-                priceInfo.appendChild(priceEl);
-                priceInfo.appendChild(changeEl);
-
-                stockItem.appendChild(stockInfo);
-                stockItem.appendChild(graph);
-                stockItem.appendChild(priceInfo);
-
+                const stockItem = createStockItem(tickerSymbol, progress);
                 categoryCard.appendChild(stockItem);
             });
+            
+            categoryCardContainer.appendChild(categoryCard);
+            appContainer.appendChild(categoryCardContainer);
+            
+            return new Promise(resolve => {
+                // Ensure images and other content are loaded before positioning
+                requestAnimationFrame(() => resolve());
+            });
+        });
 
-            appContainer.appendChild(categoryCard);
-        }
+        Promise.all(cardPromises).then(() => {
+            positionCards();
+        });
     }
 
     renderCards();
     setInterval(renderCards, 60 * 1000);
+
+    let resizeTimeout;
+    window.addEventListener("resize", () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(positionCards, 100);
+    });
 }); 
