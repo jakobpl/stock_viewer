@@ -110,6 +110,115 @@ function createStockItem(tickerSymbol, progress) {
     return stockItem;
 }
 
+function generateDummyChartData(timeframe) {
+    const dataPoints = {
+        '1D': 100, '1W': 7, '1M': 30, '3M': 90, '6M': 180,
+        'YTD': new Date().getMonth() * 30 + new Date().getDate(), '1Y': 12, '2Y': 24,
+        '5Y': 60, '10Y': 120, 'ALL': 240
+    };
+    const numPoints = dataPoints[timeframe] || 30;
+    const values = Array.from({ length: numPoints }, () => Math.random() * 100 + 50);
+    const labels = [];
+
+    // Simple label generation for placeholder
+    switch (timeframe) {
+        case '1D':
+            labels.push('9:30');
+            labels.push('11:00');
+            labels.push('12:30');
+            labels.push('2:00');
+            labels.push('4:00');
+            break;
+        case '1W':
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                labels.push(days[d.getDay()]);
+            }
+            break;
+        case '1M':
+             for (let i = 3; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - (i * 7));
+                labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+            }
+            break;
+        default:
+            labels.push('Start');
+            labels.push('End');
+            break;
+    }
+    return { values, labels };
+}
+
+function createModalChart(data, labels, color, progress = 1) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    const width = 600;
+    const height = 320;
+    const chartHeight = 280;
+    
+    svg.setAttribute("class", "modal-chart-svg");
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+    if (data.length < 2) return svg;
+
+    const max = Math.max(...data);
+    const min = Math.min(...data);
+    const range = max - min;
+
+    const chartGroup = document.createElementNS(svgNS, "g");
+
+    const path = document.createElementNS(svgNS, "path");
+    let d = "M";
+    data.forEach((d_point, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = range === 0 ? chartHeight / 2 : chartHeight - (((d_point - min) / range) * (chartHeight - 20));
+        d += `${x.toFixed(2)},${y.toFixed(2)} `;
+    });
+
+    path.setAttribute("d", d.trim());
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", color);
+    path.setAttribute("stroke-width", "2");
+    chartGroup.appendChild(path);
+
+    if (progress < 1) {
+        const clipId = `modal-chart-clip-${Date.now()}`;
+        const defs = document.createElementNS(svgNS, "defs");
+        const clipPath = document.createElementNS(svgNS, "clipPath");
+        clipPath.setAttribute("id", clipId);
+        const rect = document.createElementNS(svgNS, "rect");
+        rect.setAttribute("x", "0");
+        rect.setAttribute("y", "0");
+        rect.setAttribute("width", width * progress);
+        rect.setAttribute("height", height);
+        clipPath.appendChild(rect);
+        defs.appendChild(clipPath);
+        svg.appendChild(defs);
+        chartGroup.setAttribute("clip-path", `url(#${clipId})`);
+    }
+
+    svg.appendChild(chartGroup);
+
+    const xAxisGroup = document.createElementNS(svgNS, "g");
+    labels.forEach((label, i) => {
+        const x = (i / (labels.length - 1)) * (width - 60) + 30;
+        const text = document.createElementNS(svgNS, "text");
+        text.setAttribute("x", x);
+        text.setAttribute("y", height - 10);
+        text.setAttribute("fill", "#8e8e93");
+        text.setAttribute("font-size", "14");
+        text.setAttribute("text-anchor", "middle");
+        text.textContent = label;
+        xAxisGroup.appendChild(text);
+    });
+    svg.appendChild(xAxisGroup);
+
+    return svg;
+}
+
 const modal = document.getElementById('stock-modal');
 const modalStockDetails = document.getElementById('modal-stock-details');
 const closeButton = document.querySelector('.close-button');
@@ -151,20 +260,20 @@ function openModal(tickerSymbol) {
             </div>
         </div>
         <div class="modal-chart-controls">
-            <button class="active">1D</button>
-            <button>1W</button>
-            <button>1M</button>
-            <button>3M</button>
-            <button>6M</button>
-            <button>YTD</button>
-            <button>1Y</button>
-            <button>2Y</button>
-            <button>5Y</button>
-            <button>10Y</button>
-            <button>ALL</button>
+            <button data-timeframe="1D" class="active">1D</button>
+            <button data-timeframe="1W">1W</button>
+            <button data-timeframe="1M">1M</button>
+            <button data-timeframe="3M">3M</button>
+            <button data-timeframe="6M">6M</button>
+            <button data-timeframe="YTD">YTD</button>
+            <button data-timeframe="1Y">1Y</button>
+            <button data-timeframe="2Y">2Y</button>
+            <button data-timeframe="5Y">5Y</button>
+            <button data-timeframe="10Y">10Y</button>
+            <button data-timeframe="ALL">ALL</button>
         </div>
         <div class="modal-chart-area">
-            Chart Placeholder
+            <!-- Chart will be injected here -->
         </div>
         <div class="modal-footer-stats">
             <div class="stat-column">
@@ -189,6 +298,33 @@ function openModal(tickerSymbol) {
             </div>
         </div>
     `;
+
+    const chartArea = modalStockDetails.querySelector('.modal-chart-area');
+    const chartControls = modalStockDetails.querySelector('.modal-chart-controls');
+
+    function drawChart(timeframe) {
+        const chartData = generateDummyChartData(timeframe);
+        const chartColor = chartData.values[chartData.values.length - 1] >= chartData.values[0] ? '#34c759' : '#ff3b30';
+        
+        let progress = 1;
+        if (timeframe === '1D') {
+            progress = getMarketProgress();
+        }
+        
+        const chart = createModalChart(chartData.values, chartData.labels, chartColor, progress);
+        chartArea.innerHTML = '';
+        chartArea.appendChild(chart);
+    }
+
+    chartControls.addEventListener('click', (event) => {
+        if (event.target.tagName === 'BUTTON') {
+            chartControls.querySelector('.active').classList.remove('active');
+            event.target.classList.add('active');
+            drawChart(event.target.dataset.timeframe);
+        }
+    });
+
+    drawChart('1D');
     modal.style.display = 'flex';
 }
 
