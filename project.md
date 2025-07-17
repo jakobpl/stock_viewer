@@ -1,3 +1,4 @@
+You are a senior swe and mentor for an intern at Google
 # Market Glance Web Interface
 
 ## Goal
@@ -12,6 +13,7 @@ Build a simple, elegant web page showing current prices and daily changes for st
 
 ## Tech Stack
 - **Frontend**: HTML, CSS, JavaScript (no external libraries)
+- **Backend**: Python (for local development server)
 - **API (Future)**: Finnhub API for real-time stock quotes.
 
 ## Next Steps & Future Enhancements
@@ -27,6 +29,10 @@ Build a simple, elegant web page showing current prices and daily changes for st
     -   Fetch and display the full company name below the ticker symbol.
 5.  **Configuration**:
     -   Allow users to customize the list of tickers and categories.
+6.  **Detailed Stock View**:
+    -   [x] Implement a modal to show more details when a stock is clicked.
+7.  **Local Development Server**:
+    -   [x] Added a Python server for easy local development.
 
 ## Categories and Tickers
 ```json

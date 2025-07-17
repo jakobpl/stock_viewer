@@ -1,0 +1,23 @@
+export const categories = {
+    "Broad Market ETFs": ["SPY", "QQQ", "DIA"],
+    "Small-Cap Stocks": ["IWM"],
+    "Bonds/Interest Rates": ["TLT"],
+    "Tech": ["AAPL", "AMZN", "GOOGL", "META", "TSLA", "NVDA", "MSFT"],
+    "CPU/Semiconductors": ["AMD", "INTC", "AVGO", "MU", "NVDA"],
+    "Communication Services": ["VZ", "NFLX"],
+    "Financials": ["JPM", "BRK.B", "BAC", "ZION"],
+    "Healthcare": ["LLY", "UNH", "JNJ", "URGN"],
+    "Consumer Discretionary": ["HD", "WMT"],
+    "Consumer Staples": ["PG", "KO"],
+    "Industrials": ["GE"],
+    "Energy/Oil": ["XOM", "CVX", "NEE"],
+    "Materials": ["FCX"],
+    "Real Estate": ["VNQ", "O"],
+    "Utilities": ["DUK"],
+    "Military Industrial Complex": ["LMT", "RTX", "NOC", "AXON", "BA"],
+    "Precious Metals": ["GLD", "SLV", "NEM"],
+    "Crypto-Related": ["MSTR", "COIN", "BITO"],
+    "Coffee/Agriculture": ["SBUX", "JO", "DBA", "KHC"],
+    "Oil ETF (Optional)": ["USO"],
+    "Other (MicroStrategy Preferred Stocks)": ["STRK", "STRF", "STRD"]
+}; 
